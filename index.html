@@ -14,22 +14,37 @@
 </head>
 
 <body>
-  <div id="text"></div>
+  <div id="emotes"></div>
   <style>
     body {
       margin: 0;
     }
 
-    #text > img {
-      max-width: 320px;
-      max-height: 320px;
+    #emotes {
+      display: flex;
+      justify-content: space-between;
       width: 100vw;
-      height: 100vh;
+    }
+
+    #emotes > img {
       object-fit: contain;
     }
   </style>
   <script>
     const params = new URLSearchParams(location.search);
+    const emoteSize = parseInt(params.get("size")) || 112;
+    const emoteCount = Math.floor(window.innerWidth / emoteSize);
+
+    const emoteContainer = document.querySelector("#emotes");
+
+    for(let i = 0; i < emoteCount; i++) {
+      const img = document.createElement('img');
+      img.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=');
+      img.width = emoteSize;
+      img.height = emoteSize
+      emoteContainer.appendChild(img);
+    }
+
     const channel = params.get("channel");
     let thirdPartyEmotes = [];
 
@@ -69,31 +84,35 @@
     ComfyJS.onChat = (user, message, flags, self, extra) => {
       var words = message.split(' ');
       var usedThirdPartyEmotes = []
-      var randHTML = []
+      var emoteUrls = []
 
       words.forEach(word => {
         const emote = thirdPartyEmotes.find(e => e.text === word);
         if(emote) {
           usedThirdPartyEmotes.push(emote.url)
-          console.log(emote)
         }
       });
 
       if (usedThirdPartyEmotes.length > 0) {
         var emoteUrl = usedThirdPartyEmotes[Math.floor(Math.random() * usedThirdPartyEmotes.length)];
-        randHTML.push(`<img src="${emoteUrl}"/>`);
+        emoteUrls.push(emoteUrl);
       }
 
       if (extra.messageEmotes) {
         var emotes = Object.keys(extra.messageEmotes);
         var emoteId = emotes[Math.floor(Math.random() * emotes.length)];
-        randHTML.push(`<img src="https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/3.0"/>`);
+        emoteUrls.push(`https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/3.0`);
       }
 
       // Pick random emote html if message includes both twitch and bttv emotes
-      if (randHTML.length > 0) {
-        document.querySelector("#text").innerHTML = randHTML[Math.floor(Math.random() * randHTML.length)]
-        randHTML = []
+      if (emoteUrls.length > 0) {
+        const emoteUrl = emoteUrls[Math.floor(Math.random() * emoteUrls.length)];
+
+        const node = emoteContainer.lastChild;
+        emoteContainer.removeChild(node);
+        node.setAttribute('src', emoteUrl);
+        emoteContainer.insertBefore(node, emoteContainer.firstChild);
+        emoteUrls = []
       }
     }
     ComfyJS.Init(channel);
